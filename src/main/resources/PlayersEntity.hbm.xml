@@ -4,7 +4,7 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
 
-    <class name="com.kulichx.entity.PlayersEntity" table="PLAYERS" schema="PUBLIC" catalog="TENNISSCORE">
+    <class name="com.kulichx.entity.Players" table="PLAYERS" schema="PUBLIC" catalog="TENNISSCORE">
         <id name="id" column="ID"/>
         <property name="name" column="NAME"/>
     </class>
