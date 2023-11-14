@@ -22,15 +22,7 @@ public class Matches {
     @ManyToOne
     @JoinColumn(name = "WINNER")
     private Players winner;
-    private int p1Score;
-    private int p2Score;
-    private int p1Game;
-    private int p2Game;
-    private int p1Set;
-    private int p2Set;
 
     public Matches() {
     }
-
-
 }

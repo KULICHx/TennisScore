@@ -22,16 +22,17 @@ public class PlayersDao implements DaoInterface<Players> {
         return toReturn;
     }
 
-    public Optional<Players> findByName(String name){
-
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        String hql = "FROM Players WHERE name = :name";
-        List<Players> PlayersList = session.createQuery(hql).setParameter("name", name).getResultList();
-        int countPlayers = PlayersList.size();
-        if (countPlayers == 1) {
-            return Optional.of(PlayersList.get(0));
-        } else {
-            return Optional.empty();
+    public Players getPlayerByName(Session session, String playerName) {
+        try {
+            String hql = "FROM Players WHERE name = :name";
+            List<Players> playerList = session.createQuery(hql, Players.class)
+                    .setParameter("name", playerName)
+                    .getResultList();
+            return playerList.isEmpty() ? null : playerList.get(0);
+        } catch (Exception e) {
+            // Обработка ошибки
+            System.err.println("Error fetching player by name: " + e.getMessage());
+            return null;
         }
     }
 
@@ -78,4 +79,10 @@ public class PlayersDao implements DaoInterface<Players> {
         return Players;
     }
 
+    public Players createPlayer(Session session, String playerName) {
+        Players newPlayer = new Players();
+        newPlayer.setName(playerName);
+        session.save(newPlayer);
+        return newPlayer;
+    }
 }

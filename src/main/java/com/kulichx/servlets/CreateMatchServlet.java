@@ -1,7 +1,10 @@
 package com.kulichx.servlets;
 
+import com.kulichx.dao.MatchesDao;
+import com.kulichx.dao.PlayersDao;
 import com.kulichx.entity.Matches;
 import com.kulichx.entity.Players;
+import com.kulichx.servies.MatchGeneratorService;
 import com.kulichx.util.HibernateUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,17 +13,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @WebServlet(name = "CreateMatchServlet", value = "/new-match")
-public class    CreateMatchServlet extends HttpServlet {
+public class CreateMatchServlet extends HttpServlet {
 
-    private static final ConcurrentMap<UUID, Matches> currentMatches = new ConcurrentHashMap<>();
+    private static final PlayersDao pd = new PlayersDao();
+    private static final MatchesDao matchesDao = new MatchesDao();
+    private static final MatchGeneratorService matchService = new MatchGeneratorService(matchesDao);
+    private static final Logger logger = LoggerFactory.getLogger(CreateMatchServlet.class);
+    private static final String MATCH_SCORE_PAGE_URL = "/match-score?id=";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -28,67 +33,38 @@ public class    CreateMatchServlet extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Получаем параметры из формы
         String player1Name = request.getParameter("player1");
         String player2Name = request.getParameter("player2");
 
-        // Открываем сессию Hibernate
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Начинаем транзакцию
             Transaction transaction = session.beginTransaction();
 
             try {
-                // Получаем объекты Players из базы данных по именам
-                Players player1 = getPlayerByName(session, player1Name);
-                Players player2 = getPlayerByName(session, player2Name);
+                if (player1Name.equals(player2Name)) {
+                    response.sendRedirect(MATCH_SCORE_PAGE_URL + "invalid");
+                    return;
+                }
 
-                // Проверяем существование игроков в таблице Players и создаем их, если не существуют
+                Players player1 = pd.getPlayerByName(session, player1Name);
+                Players player2 = pd.getPlayerByName(session, player2Name);
+
                 if (player1 == null) {
-                    player1 = createPlayer(session, player1Name);
+                    player1 = pd.createPlayer(session, player1Name);
                 }
                 if (player2 == null) {
-                    player2 = createPlayer(session, player2Name);
+                    player2 = pd.createPlayer(session, player2Name);
                 }
 
-                // Создаем объект Matches
-                Matches match = new Matches();
-                match.setPlayer1(player1);
-                match.setPlayer2(player2);
+                Matches match = matchService.createNewMatch(player1, player2);
 
-                // Сохраняем матч в коллекцию текущих матчей
-                UUID matchId = UUID.randomUUID();
-                currentMatches.put(matchId, match);
-
-                // Фиксируем транзакцию
                 transaction.commit();
 
-                // Редирект на страницу /match-score?uuid=$match_id
-                response.sendRedirect("/match-score?uuid=" + matchId);
+                response.sendRedirect(MATCH_SCORE_PAGE_URL + match.getId());  // Используем id матча, если он у вас есть
             } catch (Exception e) {
-                // В случае ошибки откатываем транзакцию
                 transaction.rollback();
-                e.printStackTrace();
+                logger.error("Error processing new match request", e);
+                response.sendRedirect(MATCH_SCORE_PAGE_URL + "error");
             }
         }
     }
-
-    private Players getPlayerByName(Session session, String playerName) {
-        String hql = "FROM Players WHERE name = :name";
-        List<Players> playerList = session.createQuery(hql, Players.class)
-                .setParameter("name", playerName)
-                .getResultList();
-        if (!playerList.isEmpty()) {
-            return playerList.get(0);
-        } else {
-            return null;
-        }
-    }
-
-        private Players createPlayer(Session session, String playerName) {
-            // Создаем нового игрока и сохраняем его в базе данных
-            Players newPlayer = new Players();
-            newPlayer.setName(playerName);
-            session.persist(newPlayer);
-            return newPlayer;
-        }
 }

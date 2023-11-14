@@ -1,4 +1,4 @@
-package com.kulichx.servlets;
+package com.kulichx.controllers;
 
 import com.kulichx.dao.MatchesDao;
 import jakarta.servlet.ServletException;
