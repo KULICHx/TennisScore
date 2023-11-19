@@ -25,4 +25,9 @@ public class Matches {
 
     public Matches() {
     }
+    public Matches(Players player1, Players player2) {
+        this.player1 = player1;
+        this.player2 = player2;
+    }
+
 }

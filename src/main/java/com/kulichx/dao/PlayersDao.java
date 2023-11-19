@@ -22,8 +22,8 @@ public class PlayersDao implements DaoInterface<Players> {
         return toReturn;
     }
 
-    public Players getPlayerByName(Session session, String playerName) {
-        try {
+    public Players getPlayerByName(String playerName) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             String hql = "FROM Players WHERE name = :name";
             List<Players> playerList = session.createQuery(hql, Players.class)
                     .setParameter("name", playerName)
@@ -36,15 +36,26 @@ public class PlayersDao implements DaoInterface<Players> {
         }
     }
 
-
     @Override
     public void save(Players entity) {
         Session session = HibernateUtil.getSessionFactory().openSession();
         Transaction tx1 = session.beginTransaction();
-        session.persist(entity);
-        tx1.commit();
-        session.close();
+        try {
+            session.merge(entity);
+            tx1.commit();
+        } catch (Exception e) {
+            if (tx1 != null) {
+                tx1.rollback();
+            }
+            e.printStackTrace(); // Поменяйте это на логирование в продакшене
+            throw new RuntimeException("Error saving player: " + e.getMessage(), e);
+        } finally {
+            session.close();
+        }
     }
+
+
+
 
     @Override
     public void update(Players entity) {
@@ -79,10 +90,22 @@ public class PlayersDao implements DaoInterface<Players> {
         return Players;
     }
 
-    public Players createPlayer(Session session, String playerName) {
-        Players newPlayer = new Players();
-        newPlayer.setName(playerName);
-        session.save(newPlayer);
-        return newPlayer;
+    public Players createPlayer(String playerName) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx1 = session.beginTransaction();
+
+            Players newPlayer = new Players();
+            newPlayer.setName(playerName);
+            session.persist(newPlayer);
+
+            tx1.commit();
+            return newPlayer;
+        } catch (Exception e) {
+            // Логируем ошибку
+            e.printStackTrace();
+            return null;
+        }
     }
+
+
 }
