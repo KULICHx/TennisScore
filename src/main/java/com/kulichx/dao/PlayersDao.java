@@ -2,80 +2,88 @@ package com.kulichx.dao;
 
 import com.kulichx.entity.Players;
 import com.kulichx.util.HibernateUtil;
-import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
-import java.util.List;
-import java.util.Optional;
+public class PlayersDao {
+    private final SessionFactory sessionFactory;
 
-public class PlayersDao implements DaoInterface<Players> {
-
-    @Override
-    public Optional<Players> findById(Integer id) {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Optional<Players> toReturn = Optional.of(session.get(Players.class, id));
-        session.close();
-        return toReturn;
+    public PlayersDao(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
-    public Optional<Players> findByName(String name){
+    public Players save(Players player) {
+        Session session = sessionFactory.openSession();
+        Transaction transaction = null;
 
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        String hql = "FROM Players WHERE name = :name";
-        List<Players> PlayersList = session.createQuery(hql).setParameter("name", name).getResultList();
-        int countPlayers = PlayersList.size();
-        if (countPlayers == 1) {
-            return Optional.of(PlayersList.get(0));
-        } else {
-            return Optional.empty();
+        try {
+            transaction = session.beginTransaction();
+            if (player.getId() == 0) {
+                session.persist(player);
+            } else {
+                session.merge(player);
+            }
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace(); // Лучше логировать ошибку
+        } finally {
+            session.close();
+        }
+
+        return player;
+    }
+
+
+    public Players getOrCreatePlayer(String playerName) {
+        // Получение сессии Hibernate
+        Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+        session.beginTransaction();
+
+        Players player = getPlayerByName(playerName);
+
+        if (player == null) {
+            // Игрок не существует, создаем нового
+            player = new Players();
+            player.setName(playerName);
+
+            // Проверка, что имя не является null или пустой строкой
+            if (player.getName() != null && !player.getName().isEmpty()) {
+                session.saveOrUpdate(player);
+            } else {
+                System.out.println("erooooor");
+            }
+        }
+
+        session.getTransaction().commit();
+        return player;
+    }
+
+    public Players getPlayerByName(String playerName) {
+        // Получение сессии Hibernate
+        Session session = HibernateUtil.getSessionFactory().openSession(); // Изменено на openSession()
+
+        try {
+            session.beginTransaction();
+
+            // Поиск игрока по имени
+            Query<Players> query = session.createQuery("from Players where name = :name", Players.class);
+            query.setParameter("name", playerName);
+            Players player = query.uniqueResult();
+
+            session.getTransaction().commit();
+            return player;
+        } catch (Exception e) {
+            if (session.getTransaction() != null && session.getTransaction().isActive()) {
+                session.getTransaction().rollback();
+            }
+            throw e;
+        } finally {
+            session.close();
         }
     }
-
-
-    @Override
-    public void save(Players entity) {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx1 = session.beginTransaction();
-        session.persist(entity);
-        tx1.commit();
-        session.close();
-    }
-
-    @Override
-    public void update(Players entity) {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx1 = session.beginTransaction();
-        session.merge(entity);
-        tx1.commit();
-        session.close();
-    }
-
-    @Override
-    public void delete(Players entity) {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx1 = session.beginTransaction();
-        session.remove(entity);
-        tx1.commit();
-        session.close();
-
-    }
-
-    @Override
-    public List<Players> findAll() {
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        CriteriaBuilder cb = (CriteriaBuilder) session.getCriteriaBuilder();
-        CriteriaQuery cq = cb.createQuery(Players.class);
-        Root rootEntry = cq.from(Players.class);
-        CriteriaQuery all = cq.select(rootEntry);
-        TypedQuery allQuery = (TypedQuery) session.createQuery(String.valueOf(all));
-
-        List<Players> Players = (List<Players>) allQuery.getResultList();
-        session.close();
-        return Players;
-    }
-
 }
