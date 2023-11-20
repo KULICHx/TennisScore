@@ -7,27 +7,28 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "MATCHES", schema = "PUBLIC", catalog = "TENNISSCORE")
+@Table(name = "matches", schema = "TennisScore")
 public class Matches {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "ID")
+    @Column(name = "id")
     private int id;
     @ManyToOne
-    @JoinColumn(name = "PLAYER1")
+    @JoinColumn(name = "player1")
     private Players player1;
     @ManyToOne
-    @JoinColumn(name = "PLAYER2")
+    @JoinColumn(name = "player2")
     private Players player2;
     @ManyToOne
-    @JoinColumn(name = "WINNER")
+    @JoinColumn(name = "winner")
     private Players winner;
 
-    public Matches() {
-    }
     public Matches(Players player1, Players player2) {
         this.player1 = player1;
         this.player2 = player2;
     }
 
+    public Matches() {
+
+    }
 }

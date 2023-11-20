@@ -7,14 +7,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "PLAYERS", schema = "PUBLIC", catalog = "TENNISSCORE")
+@Table(name = "players", schema = "TennisScore")
 public class Players {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "ID")
+    @Column(name = "id")
     private int id;
     @Basic
-    @Column(name = "NAME")
+    @Column(name = "name")
     private String name;
 
 }
