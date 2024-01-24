@@ -4,9 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
 @Setter
 @Entity
+@Getter
 @Table(name = "players", schema = "TennisScore")
 public class Players {
     @GeneratedValue(strategy = GenerationType.IDENTITY)

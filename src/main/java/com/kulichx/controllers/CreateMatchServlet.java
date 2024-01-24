@@ -1,7 +1,9 @@
 package com.kulichx.controllers;
 
 import com.kulichx.dao.PlayersDao;
-import com.kulichx.servies.MatchCreationService;
+import com.kulichx.entity.Matches;
+import com.kulichx.service.MatchCreationService;
+import com.kulichx.service.OngoingMatchesService;
 import com.kulichx.util.HibernateUtil;
 
 import jakarta.servlet.ServletException;
@@ -17,11 +19,13 @@ import java.util.UUID;
 public class CreateMatchServlet extends HttpServlet {
 
     private MatchCreationService matchCreationService;
+    private OngoingMatchesService ongoingMatchesService;
 
     @Override
     public void init() throws ServletException {
         // Инициализация сервиса
         matchCreationService = new MatchCreationService(new PlayersDao(HibernateUtil.getSessionFactory()));
+        ongoingMatchesService = new OngoingMatchesService();
     }
 
     @Override
@@ -33,6 +37,9 @@ public class CreateMatchServlet extends HttpServlet {
 
             // Создание матча и получение его UUID
             UUID matchId = matchCreationService.newMatch(player1Name, player2Name);
+
+            Matches match = matchCreationService.getMatch(matchId);
+            OngoingMatchesService.addMatch(matchId, match);
 
             // Отправка уникального UUID в качестве ответа
             response.getWriter().write(matchId.toString());

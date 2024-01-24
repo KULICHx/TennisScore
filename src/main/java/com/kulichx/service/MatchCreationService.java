@@ -1,6 +1,7 @@
-package com.kulichx.servies;
+package com.kulichx.service;
 
 import com.kulichx.dao.PlayersDao;
+import com.kulichx.entity.MatchScore;
 import com.kulichx.entity.Matches;
 import com.kulichx.entity.Players;
 
@@ -25,6 +26,7 @@ public class MatchCreationService {
 
         // Создаем матч
         Matches match = new Matches(player1, player2);
+        match.setMatchScore(new MatchScore());
 
         // Помещаем матч в коллекцию текущих матчей с использованием UUID
         UUID matchId = UUID.randomUUID();

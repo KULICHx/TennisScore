@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
 @Setter
+@Getter
 @Entity
 @Table(name = "matches", schema = "TennisScore")
 public class Matches {
@@ -23,6 +23,8 @@ public class Matches {
     @JoinColumn(name = "winner")
     private Players winner;
 
+    @Embedded
+    private MatchScore matchScore;
     public Matches(Players player1, Players player2) {
         this.player1 = player1;
         this.player2 = player2;
@@ -31,4 +33,5 @@ public class Matches {
     public Matches() {
 
     }
+
 }
